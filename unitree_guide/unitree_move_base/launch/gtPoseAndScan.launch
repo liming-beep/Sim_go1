@@ -1,0 +1,10 @@
+<launch>
+  <!-- GT pose 接口：P3D /state_estimation → /registered_scan, /Odometry, map→odom TF -->
+  <!-- lidar_offset 与 Go1 URDF 的 laser_livox_joint xyz 一致 -->
+  <node pkg="gt_pose_interface" type="gtPoseInterface" name="gtPoseInterface"
+        output="screen" required="true">
+    <param name="lidar_offset_x" value="0.20"/>
+    <param name="lidar_offset_y" value="0.0"/>
+    <param name="lidar_offset_z" value="0.10"/>
+  </node>
+</launch>

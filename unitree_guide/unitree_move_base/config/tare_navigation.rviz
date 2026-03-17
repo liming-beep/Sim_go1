@@ -1,0 +1,115 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Cell Size: 1
+      Color: 160; 160; 164
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 50
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    - Class: rviz/RobotModel
+      Enabled: true
+      Name: RobotModel
+      Robot Description: robot_description
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 1.0
+      Enabled: true
+      Name: Registered Scan
+      Queue Size: 5
+      Size (m): 0.04
+      Style: Points
+      Topic: /registered_scan
+      Value: true
+
+    - Alpha: 0.7
+      Class: rviz/PointCloud2
+      Color: 0; 170; 255
+      Color Transformer: FlatColor
+      Decay Time: 1.0
+      Enabled: true
+      Name: Terrain Map
+      Queue Size: 5
+      Size (m): 0.05
+      Style: Squares
+      Topic: /terrain_map
+      Value: true
+
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Line Style: Lines
+      Line Width: 0.05
+      Name: Local Path (TARE)
+      Queue Size: 5
+      Topic: /path
+      Value: true
+
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /graph_decoder_viz
+      Name: FAR-Planner Graph
+      Queue Size: 100
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/Odometry
+      Enabled: true
+      Name: Robot Pose
+      Topic: /state_estimation
+      Keep: 1
+      Length: 0.8
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 255; 165; 0
+      Enabled: true
+      Name: Way Point
+      Queue Size: 5
+      Radius: 0.3
+      Topic: /way_point
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 255; 0; 0
+      Enabled: true
+      Name: Goal Point
+      Queue Size: 5
+      Radius: 0.4
+      Topic: /goal_point
+      Value: true
+
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+      Hide Inactive: false
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/GoalPointTool
+Window Geometry:
+  Height: 900
+  Width: 1280
+  X: 50
+  Y: 50

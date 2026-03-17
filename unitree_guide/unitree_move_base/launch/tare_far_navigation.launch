@@ -1,0 +1,31 @@
+<launch>
+  <!--
+    TARE 局部规划 + FAR-Planner 全局规划
+    替代 move_base.launch
+    目标点通过 RViz GoalPointTool 发布到 /goal_point
+    FAR-Planner 接收后输出 /way_point 给 TARE localPlanner
+  -->
+
+  <!-- TARE 局部规划栈 -->
+  <include file="$(find local_planner)/launch/local_planner.launch">
+    <arg name="cameraOffsetZ"  value="0"/>
+    <arg name="maxSpeed"       value="0.3"/>
+    <arg name="autonomyMode"   value="true"/>
+    <arg name="autonomySpeed"  value="0.3"/>
+  </include>
+  <!-- pathFollower 降频到 25Hz，避免 P3D 25Hz 步态抖动被放大 -->
+  <param name="pathFollower/pubSkipNum" value="4" type="int"/>
+  <!-- 旋转时保持最小速度 0.05m/s 激活 trot 步态，让腿踏步而不是躯干硬转 -->
+  <param name="pathFollower/minRotateSpeed" value="0.05" type="double"/>
+
+  <include file="$(find terrain_analysis)/launch/terrain_analysis.launch"/>
+  <include file="$(find terrain_analysis_ext)/launch/terrain_analysis_ext.launch"/>
+  <include file="$(find sensor_scan_generation)/launch/sensor_scan_generation.launch"/>
+
+  <!-- FAR-Planner 全局规划（关闭自带 RViz，使用 Go1 专用参数） -->
+  <include file="$(find far_planner)/launch/far_planner.launch">
+    <arg name="launch_rviz" value="false"/>
+    <arg name="config"      value="go1"/>
+  </include>
+
+</launch>

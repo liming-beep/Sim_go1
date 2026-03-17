@@ -1,0 +1,11 @@
+<launch>
+  <!-- GT pose 接口（替代 pointCloud2LaserScan） -->
+  <include file="$(find unitree_move_base)/launch/gtPoseAndScan.launch"/>
+
+  <!-- TARE + FAR-Planner 导航栈（替代 move_base） -->
+  <include file="$(find unitree_move_base)/launch/tare_far_navigation.launch"/>
+
+  <!-- RViz -->
+  <node pkg="rviz" type="rviz" name="rviz"
+        args="-d $(find unitree_move_base)/config/tare_navigation.rviz" output="log"/>
+</launch>
