@@ -1,0 +1,61 @@
+<launch>
+  <!--
+    水厂仿真启动文件
+    启动 Gazebo + Go1 机器人（水厂地图）
+
+    使用方式：
+      Terminal 1: roslaunch water_plant_inspection simulation.launch
+                  等待 Gazebo 稳定（约10秒）
+                  按 '2' 让机器人站立，等待2秒
+                  按 '5' 切换到 MoveBase 模式，等待2秒
+      Terminal 2: roslaunch water_plant_inspection inspection.launch
+  -->
+
+  <!-- 将水厂模型目录加入 Gazebo 模型搜索路径 -->
+  <env name="GAZEBO_MODEL_PATH"
+       value="$(find water_plant_inspection)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
+  <!-- 启动 Gazebo（水厂世界）-->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find water_plant_inspection)/worlds/water_plant.world"/>
+    <arg name="paused"     value="true"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui"        value="true"/>
+    <arg name="headless"   value="false"/>
+    <arg name="debug"      value="false"/>
+  </include>
+
+  <!-- 加载 Go1 URDF -->
+  <param name="robot_description"
+         command="$(find xacro)/xacro --inorder '$(find go1_description)/xacro/robot.xacro'
+         DEBUG:=false"/>
+
+  <!-- 生成 Go1 机器人 -->
+  <node pkg="gazebo_ros" type="spawn_model" name="urdf_spawner"
+        respawn="false" output="screen"
+        args="-urdf -z 0.6 -model go1_gazebo -param robot_description -unpause"/>
+
+  <!-- 加载关节控制器配置 -->
+  <rosparam file="$(find go1_description)/config/robot_control.yaml" command="load"/>
+
+  <!-- 启动关节控制器 -->
+  <node pkg="controller_manager" type="spawner" name="controller_spawner"
+        respawn="false" output="screen" ns="/go1_gazebo"
+        args="joint_state_controller
+              FL_hip_controller FL_thigh_controller FL_calf_controller
+              FR_hip_controller FR_thigh_controller FR_calf_controller
+              RL_hip_controller RL_thigh_controller RL_calf_controller
+              RR_hip_controller RR_thigh_controller RR_calf_controller"/>
+
+  <!-- robot_state_publisher -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher"
+        name="robot_state_publisher" respawn="false" output="screen">
+    <remap from="/joint_states" to="/go1_gazebo/joint_states"/>
+  </node>
+
+  <!-- unitree_guide 步态控制器 -->
+  <include file="$(find unitree_controller)/launch/set_ctrl.launch">
+    <arg name="rname" value="go1"/>
+  </include>
+
+</launch>

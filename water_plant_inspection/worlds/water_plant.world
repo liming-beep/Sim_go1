@@ -1,0 +1,261 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="water_plant">
+
+    <physics type="ode">
+      <max_step_size>0.0002</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>5000</real_time_update_rate>
+      <gravity>0 0 -9.81</gravity>
+      <ode>
+        <solver><type>quick</type><iters>50</iters><sor>1.3</sor></solver>
+        <constraints>
+          <cfm>0.0</cfm><erp>0.2</erp>
+          <contact_max_correcting_vel>10.0</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+    </physics>
+
+    <scene>
+      <sky><clouds><speed>8</speed></clouds></sky>
+      <ambient>0.6 0.6 0.6 1</ambient>
+    </scene>
+
+    <include><uri>model://sun</uri></include>
+    <include><uri>model://ground_plane</uri></include>
+
+    <!-- ============================================================
+         水厂户外巡检场景
+
+         巡检路线（由近到远，均在空旷道路上）：
+           起点(0,0)
+           → 阀门区  ( 1.0,-2.5) 2.7m
+           → 配电柜  (-1.0,-5.0) 5.1m
+           → 蓄水池  (-5.0, 2.0) 5.4m
+           → 水泵区  ( 7.0, 0.5) 7.0m
+           → 管道区  ( 8.0,-1.5) 8.1m
+           → 返回起点(0,0)
+
+         障碍物间距 = 原版 ×1.5，横管全部删除
+         ============================================================ -->
+
+    <!-- ===== 竖立管道（3根，散布在东侧水泵区周边） ===== -->
+
+    <model name="pipe_v1">
+      <static>true</static>
+      <link name="link">
+        <pose>5.3 2.7 1.2 0 0 0</pose>
+        <collision name="col"><geometry><cylinder><radius>0.12</radius><length>2.4</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.12</radius><length>2.4</length></cylinder></geometry>
+          <material><ambient>0.55 0.58 0.62 1</ambient><diffuse>0.45 0.48 0.52 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="pipe_v2">
+      <static>true</static>
+      <link name="link">
+        <pose>6.8 3.8 1.0 0 0 0</pose>
+        <collision name="col"><geometry><cylinder><radius>0.10</radius><length>2.0</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.10</radius><length>2.0</length></cylinder></geometry>
+          <material><ambient>0.55 0.58 0.62 1</ambient><diffuse>0.45 0.48 0.52 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="pipe_v3">
+      <static>true</static>
+      <link name="link">
+        <pose>9.5 3.5 1.3 0 0 0</pose>
+        <collision name="col"><geometry><cylinder><radius>0.13</radius><length>2.6</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.13</radius><length>2.6</length></cylinder></geometry>
+          <material><ambient>0.5 0.52 0.55 1</ambient><diffuse>0.4 0.42 0.45 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- ===== 水泵底座 ===== -->
+
+    <model name="pump_base_1">
+      <static>true</static>
+      <link name="link">
+        <pose>9.8 0.0 0.25 0 0 0.4</pose>
+        <collision name="col"><geometry><box><size>0.9 0.9 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.9 0.9 0.5</size></box></geometry>
+          <material><ambient>0.4 0.4 0.45 1</ambient><diffuse>0.35 0.35 0.4 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="pump_base_2">
+      <static>true</static>
+      <link name="link">
+        <pose>9.5 -5.5 0.25 0 0 -0.5</pose>
+        <collision name="col"><geometry><box><size>1.0 0.8 0.5</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>1.0 0.8 0.5</size></box></geometry>
+          <material><ambient>0.4 0.4 0.45 1</ambient><diffuse>0.35 0.35 0.4 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- ===== 阀门箱 ===== -->
+
+    <model name="valve_box_1">
+      <static>true</static>
+      <link name="link">
+        <pose>3.8 -3.8 0.3 0 0 0.5</pose>
+        <collision name="col"><geometry><box><size>0.6 0.4 0.6</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.6 0.4 0.6</size></box></geometry>
+          <material><ambient>0.3 0.5 0.3 1</ambient><diffuse>0.25 0.45 0.25 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="valve_box_2">
+      <static>true</static>
+      <link name="link">
+        <pose>6.0 -4.5 0.3 0 0 -0.3</pose>
+        <collision name="col"><geometry><box><size>0.5 0.5 0.6</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.5 0.5 0.6</size></box></geometry>
+          <material><ambient>0.3 0.5 0.3 1</ambient><diffuse>0.25 0.45 0.25 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    
+
+    <!-- ===== 储水罐 ===== -->
+
+    <model name="storage_tank_1">
+      <static>true</static>
+      <link name="link">
+        <pose>-6.0 3.8 0.8 0 0 0</pose>
+        <collision name="col"><geometry><cylinder><radius>0.6</radius><length>1.6</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.6</radius><length>1.6</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.6 1</ambient><diffuse>0.15 0.35 0.55 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="storage_tank_2">
+      <static>true</static>
+      <link name="link">
+        <pose>-7.5 1.5 0.8 0 0 0</pose>
+        <collision name="col"><geometry><cylinder><radius>0.5</radius><length>1.6</length></cylinder></geometry></collision>
+        <visual name="vis"><geometry><cylinder><radius>0.5</radius><length>1.6</length></cylinder></geometry>
+          <material><ambient>0.2 0.4 0.6 1</ambient><diffuse>0.15 0.35 0.55 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- ===== 控制箱（配电柜，P3附近） ===== -->
+
+    <model name="control_cabinet_1">
+      <static>true</static>
+      <link name="link">
+        <pose>-2.8 -6.0 0.9 0 0 0.4</pose>
+        <collision name="col"><geometry><box><size>0.7 0.4 1.8</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.7 0.4 1.8</size></box></geometry>
+          <material><ambient>0.5 0.5 0.2 1</ambient><diffuse>0.45 0.45 0.15 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="control_cabinet_2">
+      <static>true</static>
+      <link name="link">
+        <pose>-0.5 -6.3 0.9 0 0 -0.5</pose>
+        <collision name="col"><geometry><box><size>0.7 0.4 1.8</size></box></geometry></collision>
+        <visual name="vis"><geometry><box><size>0.7 0.4 1.8</size></box></geometry>
+          <material><ambient>0.5 0.5 0.2 1</ambient><diffuse>0.45 0.45 0.15 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <!-- ===== 外部模型 ===== -->
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringA_01</uri>
+      <name>clutter_a_1</name>
+      <pose>4.5 4.5 0 0 0 0.6</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringA_01</uri>
+      <name>clutter_a_2</name>
+      <pose>10.5 4.5 0 0 0 1.8</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringA_01</uri>
+      <name>clutter_a_3</name>
+      <pose>10.5 2.3 0 0 0 0.8</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringC_01</uri>
+      <name>clutter_c_1</name>
+      <pose>9.0 -3.8 0 0 0 1.2</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringC_01</uri>
+      <name>clutter_c_2</name>
+      <pose>3.0 -6.5 0 0 0 0.3</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringC_01</uri>
+      <name>clutter_c_3</name>
+      <pose>-4.5 -6.5 0 0 0 1.2</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringD_01</uri>
+      <name>clutter_d_1</name>
+      <pose>-6.8 -3.0 0 0 0 2.1</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringD_01</uri>
+      <name>clutter_d_2</name>
+      <pose>-7.5 3.0 0 0 0 0.9</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_ClutteringD_01</uri>
+      <name>clutter_d_3</name>
+      <pose>7.5 -6.5 0 0 0 1.5</pose>
+    </include>
+
+    <!-- 控制台移到起点东南侧，远离P2巡检点 -->
+    <include>
+      <uri>model://aws_robomaker_warehouse_DeskC_01</uri>
+      <name>monitor_desk</name>
+      <pose>3.5 -2.5 0 0 0 -0.5</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_PalletJackB_01</uri>
+      <name>maintenance_cart</name>
+      <pose>-3.8 -6.5 0 0 0 0.6</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_TrashCanC_01</uri>
+      <name>water_drum_1</name>
+      <pose>-7.5 4.5 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_TrashCanC_01</uri>
+      <name>water_drum_2</name>
+      <pose>-5.3 4.5 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_TrashCanC_01</uri>
+      <name>water_drum_3</name>
+      <pose>10.5 4.5 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://aws_robomaker_warehouse_TrashCanC_01</uri>
+      <name>water_drum_4</name>
+      <pose>1.5 4.5 0 0 0 1.0</pose>
+    </include>
+
+    
+
+  </world>
+</sdf>

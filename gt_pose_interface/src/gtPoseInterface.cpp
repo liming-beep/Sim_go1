@@ -3,12 +3,12 @@
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <tf/transform_broadcaster.h>
+#include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-// LiDAR 相对 trunk 的安装偏移（通过 ROS 参数配置，与 URDF laser_livox_joint 一致）
 double lidarOffsetX = 0.20;
 double lidarOffsetY = 0.0;
 double lidarOffsetZ = 0.10;
@@ -21,9 +21,14 @@ ros::Publisher pubRegisteredScan;
 ros::Publisher pubOdometry;
 ros::Publisher pubCloudRegistered;
 tf::TransformBroadcaster* tfBroadcaster;
+tf::TransformListener* tfListener;
 
-// 收到 trunk GT pose → 广播 TF: map→odom，转发 /Odometry
-// TF 链：map→odom(GT) → odom→base(leg odom, 由 Estimator.cpp 发布) → base→trunk→legs
+// 收到 trunk GT pose（P3D 插件，map 系）
+// 正确计算 map→odom：
+//   TF 链：map→odom→base→trunk
+//   P3D 给出 T_map_trunk，Estimator 给出 T_odom_base（base≈trunk，fixed joint）
+//   需要：T_map_odom = T_map_trunk * inv(T_odom_base)
+//   这样 map→trunk = T_map_odom * T_odom_base = T_map_trunk ✓（RobotModel 正确）
 void stateEstimationHandler(const nav_msgs::Odometry::ConstPtr& odom)
 {
     trunkX = odom->pose.pose.position.x;
@@ -35,39 +40,59 @@ void stateEstimationHandler(const nav_msgs::Odometry::ConstPtr& odom)
     trunkQw = odom->pose.pose.orientation.w;
     poseReceived = true;
 
-    tf::Transform transform;
-    transform.setOrigin(tf::Vector3(trunkX, trunkY, trunkZ));
-    transform.setRotation(tf::Quaternion(trunkQx, trunkQy, trunkQz, trunkQw));
+    tf::Transform T_map_trunk;
+    T_map_trunk.setOrigin(tf::Vector3(trunkX, trunkY, trunkZ));
+    T_map_trunk.setRotation(tf::Quaternion(trunkQx, trunkQy, trunkQz, trunkQw));
+
+    tf::StampedTransform T_odom_base;
+    tf::Transform T_map_odom;
+    try {
+        tfListener->lookupTransform("odom", "base", ros::Time(0), T_odom_base);
+        // T_map_odom = T_map_trunk * inv(T_odom_base)
+        T_map_odom = T_map_trunk * T_odom_base.inverse();
+    } catch (tf::TransformException&) {
+        // odom→base 还未就绪（启动初期），直接用 trunk GT pose
+        T_map_odom = T_map_trunk;
+    }
+
     tfBroadcaster->sendTransform(
-        tf::StampedTransform(transform, odom->header.stamp, "map", "odom")
+        tf::StampedTransform(T_map_odom, odom->header.stamp, "map", "odom")
     );
 
     pubOdometry.publish(odom);
 }
 
-// 收到原始点云（LiDAR 坐标系）→ 变换到 map 系 → 发布 /registered_scan, /cloud_registered
 void scanHandler(const sensor_msgs::PointCloud::ConstPtr& cloudIn)
 {
     if (!poseReceived) return;
 
-    tf::Quaternion q(trunkQx, trunkQy, trunkQz, trunkQw);
-    tf::Matrix3x3 R(q);
+    // Use full TF chain: map→odom→base→trunk→laser_livox
+    // This correctly accounts for trunk roll/pitch on terrain.
+    tf::StampedTransform T_map_lidar;
+    try {
+        tfListener->lookupTransform("map", "laser_livox", ros::Time(0), T_map_lidar);
+    } catch (tf::TransformException& ex) {
+        ROS_WARN_THROTTLE(5.0, "gtPoseInterface: TF map→laser_livox failed: %s", ex.what());
+        return;
+    }
+
+    tf::Matrix3x3 R(T_map_lidar.getRotation());
+    tf::Vector3    t = T_map_lidar.getOrigin();
 
     pcl::PointCloud<pcl::PointXYZI> cloudOut;
     cloudOut.reserve(cloudIn->points.size());
 
+    const float bodyFilterRadius = 0.6f; // 过滤机器人自身点云半径(m)
     for (const auto& pt : cloudIn->points)
     {
-        // Step1: laser_livox → trunk（只有平移，joint rpy=0）
-        double px = pt.x + lidarOffsetX;
-        double py = pt.y + lidarOffsetY;
-        double pz = pt.z + lidarOffsetZ;
+        // 先在雷达坐标系下过滤自身点（距离雷达原点过近的点）
+        float localDis = sqrt(pt.x*pt.x + pt.y*pt.y + pt.z*pt.z);
+        if (localDis < bodyFilterRadius) continue;
 
-        // Step2: trunk → map（旋转 + 平移）
         pcl::PointXYZI p;
-        p.x = R[0][0]*px + R[0][1]*py + R[0][2]*pz + trunkX;
-        p.y = R[1][0]*px + R[1][1]*py + R[1][2]*pz + trunkY;
-        p.z = R[2][0]*px + R[2][1]*py + R[2][2]*pz + trunkZ;
+        p.x = R[0][0]*pt.x + R[0][1]*pt.y + R[0][2]*pt.z + t.x();
+        p.y = R[1][0]*pt.x + R[1][1]*pt.y + R[1][2]*pt.z + t.y();
+        p.z = R[2][0]*pt.x + R[2][1]*pt.y + R[2][2]*pt.z + t.z();
         p.intensity = 0;
         cloudOut.push_back(p);
     }
@@ -94,6 +119,7 @@ int main(int argc, char** argv)
              lidarOffsetX, lidarOffsetY, lidarOffsetZ);
 
     tfBroadcaster = new tf::TransformBroadcaster();
+    tfListener    = new tf::TransformListener();
 
     ros::Subscriber subState = nh.subscribe<nav_msgs::Odometry>(
         "/state_estimation", 10, stateEstimationHandler);
@@ -108,5 +134,6 @@ int main(int argc, char** argv)
     ros::spin();
 
     delete tfBroadcaster;
+    delete tfListener;
     return 0;
 }
